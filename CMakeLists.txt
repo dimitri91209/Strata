@@ -903,6 +903,16 @@ if(STRATA_ENABLE_CUDA OR STRATA_ENABLE_HIP)
   endif()
 
   if(STRATA_ENABLE_HIP)
+    add_library(strata_flydsl_nvfp4 STATIC
+                src/flydsl_nvfp4/engine.cpp
+                src/flydsl_nvfp4/embedded_kernels_gfx1201.cpp)
+    target_include_directories(strata_flydsl_nvfp4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include PRIVATE ${_strata_gpu_include_directories})
+    target_link_libraries(strata_flydsl_nvfp4 PRIVATE strata_kernels strata_kernels_cpu strata_warnings ${_strata_gpu_runtime_target})
+    target_link_libraries(strata PRIVATE strata_flydsl_nvfp4)
+    target_compile_definitions(strata PRIVATE STRATA_HAVE_FLYDSL_NVFP4=1)
+  endif()
+
+  if(STRATA_ENABLE_HIP)
     enable_testing()
     set(_strata_hip_tests)
     add_executable(hip_prefill_gemm tests/hip/prefill_gemm.cpp)
@@ -1649,6 +1659,15 @@ endif()
 set_property(SOURCE src/kernels/cpu/q2_avx2.cpp APPEND PROPERTY COMPILE_DEFINITIONS ${_strata_avxvnni})
 find_package(Threads REQUIRED)
 target_link_libraries(strata_kernels_cpu PUBLIC Threads::Threads)
+if(NOT STRATA_NATIVE_EXPERTS)
+  target_sources(strata_kernels_cpu PRIVATE src/kernels/cpu/q2_avx1.cpp src/kernels/cpu/kq_avx2.cpp src/kernels/cpu/kq_avx1.cpp)
+  target_include_directories(strata_kernels_cpu PRIVATE third_party/ggml)
+  if(NOT MSVC)
+    set_source_files_properties(src/kernels/cpu/kq_avx2.cpp PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma;-mf16c")
+    set_source_files_properties(src/kernels/cpu/kq_avx1.cpp PROPERTIES COMPILE_OPTIONS "-mavx")
+    set_source_files_properties(src/kernels/cpu/q2_avx1.cpp PROPERTIES COMPILE_OPTIONS "-msse4.2;-mavx;-mno-avx2;-mno-fma;-mno-f16c")
+  endif()
+endif()
 
 # ---- plan v0.3 P6: the i-quant models' CPU experts (IQ2_XS / IQ3_XXS files) ----
 #

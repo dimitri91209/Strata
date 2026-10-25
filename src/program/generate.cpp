@@ -103,6 +103,9 @@
 #if defined(STRATA_HAVE_QWEN35)
 #include "strata/qwen35/engine.hpp"
 #endif
+#if defined(STRATA_HAVE_FLYDSL_NVFP4)
+#include "strata/flydsl_nvfp4/engine.hpp"
+#endif
 #if defined(_WIN32)
 #include <windows.h>
 #include <psapi.h>
@@ -2410,6 +2413,13 @@ int main(int argc, char** argv) {
         }
         if (qwen35) return strata::qwen35::run(argc, argv);
         break;
+    }
+#endif
+#if defined(STRATA_HAVE_FLYDSL_NVFP4)
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--flydsl-nvfp4") == 0) {
+            return strata::flydsl_nvfp4::run(argc, argv);
+        }
     }
 #endif
 #if defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)
